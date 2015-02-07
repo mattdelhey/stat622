@@ -53,3 +53,14 @@ model.normal.conjugate.mc <- function(posterior.parameters, mc.samples) {
       , predictive.posterior.sample = predictive.posterior.sample)
     return(posterior.samples)
 }
+
+mc.quantile.ci <- function(posterior.sample, alpha = 0.05) {
+    posterior.mean <- mean(posterior.sample)
+    posterior.quantiles <- quantile(posterior.sample, c(alpha/2, 1 - alpha/2))
+    
+    mc.quantile.ci <- list(
+        posterior.mean = posterior.mean
+      , posterior.qi.lower = posterior.quantiles[1]
+      , posterior.qi.upper = posterior.quantiles[2])
+    return(mc.quantile.ci)
+}
