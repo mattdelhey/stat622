@@ -1,5 +1,5 @@
 stat622
 -------
 
-Simple implementations for simple Bayesian models.
+Simple implementations of simple Bayesian models.
 
