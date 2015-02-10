@@ -49,50 +49,23 @@ model.normal.conjugate.mc <- function(posterior.parameters, mc.samples) {
     return(posterior.samples)
 }
 
-#' @title mc.quantile.ci
-#' Monte Carlo quantile-based confidence interval
-mc.quantile.ci <- function(posterior.sample, alpha = 0.05) {
-    posterior.mean <- mean(posterior.sample)
-    posterior.quantiles <- quantile(posterior.sample, c(alpha/2, 1 - alpha/2))
-    
-    mc.quantile.ci <- list(
-        posterior.mean = posterior.mean
-      , posterior.qi.lower = posterior.quantiles[1]
-      , posterior.qi.upper = posterior.quantiles[2])
-    return(mc.quantile.ci)
-}
-
-#' @title model.normal.summary
-#' Summary statistics for normal data
-model.normal.summary <- function(x) {
-    y.bar <- mean(x)
-    s2 <- var(x)
-    n.obs <- length(x)
-    ss <- (n.obs - 1) * s2
-
-    data <- list(
-        y.bar = y.bar
-      , s2    = s2
-      , n.obs = n.obs
-      , ss    = ss)
-    return(data)
-}
-
 #' @title model.normal.semiconjugate.gibbs
 #' Gibbs samples for the semiconjugate normal model
-model.normal.semiconjugate.gibbs <- function(phi.0, gibbs.iters,
+model.normal.semiconjugate.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin = 0,
                                              mu.0, tau2.0, nu.0, sigma2.0,
                                              y.bar, n.obs, s2) {
     if (length(phi.0) != 2 & !is.vector(phi.0)) stop("phi must be a vector of length 2")
-    if (gibbs.iters %% 1 != 0) stop("number of iterations must be an integer")
+    if (gibbs.samples %% 1 != 0) stop("number of samples must be an integer")
+
+    gibbs.iters <- gibbs.samples + gibbs.burnin + 1
 
     # Initialize phi [matrix of dependent sequence of posterior samples]
     phi.empty <- data.frame(theta = rep(NA, gibbs.iters), sigma2 = rep(NA, gibbs.iters))
     phi <- rbind(phi.0, phi.empty)
 
-    for (i in 2:(gibbs.iters+1)) {
+    for (i in 2:gibbs.iters) {
         # Use new sigma2 to calculate theta posterior parameters
-        theta.posterior <- model.normal.semiconjugate.theta(
+        theta.conditional <- model.normal.semiconjugate.theta(
             sigma2 = phi$sigma2[i-1]
           , mu.0 = mu.0
           , tau2.0 = tau2.0
@@ -101,11 +74,11 @@ model.normal.semiconjugate.gibbs <- function(phi.0, gibbs.iters,
             )
 
         # Generate new theta
-        phi$theta[i] <- rnorm(1, theta.posterior$mu.n,
-                              sqrt(theta.posterior$tau2.n))
+        phi$theta[i] <- rnorm(1, theta.conditional$mu.n,
+                              sqrt(theta.conditional$tau2.n))
 
         # Use new theta to calculate sigma2 posterior parameters
-        sigma2.posterior <- model.normal.semiconjugate.sigma2(
+        sigma2.conditional <- model.normal.semiconjugate.sigma2(
             theta = phi$theta[i]
           , nu.0 = nu.0
           , sigma2.0 = sigma2.0
@@ -113,10 +86,10 @@ model.normal.semiconjugate.gibbs <- function(phi.0, gibbs.iters,
           , y.bar = y.bar
           , s2 = s2
             )
-
+        
         # Generate new sigma2
-        phi$sigma2[i] <- 1 / rgamma(1, sigma2.posterior$nu.n / 2,
-                                sigma2.posterior$nu.n * sigma2.posterior$sigma2.n / 2)
+        phi$sigma2[i] <- 1 / rgamma(1, sigma2.conditional$nu.n / 2,
+                                sigma2.conditional$nu.n * sigma2.conditional$sigma2.n / 2)
     }    
     return(phi)
 }
@@ -144,4 +117,28 @@ model.normal.semiconjugate.sigma2 <- function(theta, nu.0, sigma2.0, n.obs, y.ba
       , sigma2.n = sigma2.n
         )
     return(posterior.parameters.sigma2)
+}
+
+model.lognormal.nonconjugate <- function() {
+    
+}
+
+model.lognormal.nonconjugate.proposal <- function() {
+    
+}
+
+#' @title model.normal.summary
+#' Summary statistics for normal data
+model.normal.summary <- function(x) {
+    y.bar <- mean(x)
+    s2 <- var(x)
+    n.obs <- length(x)
+    ss <- (n.obs - 1) * s2
+
+    data <- list(
+        y.bar = y.bar
+      , s2    = s2
+      , n.obs = n.obs
+      , ss    = ss)
+    return(data)
 }

@@ -1,5 +1,3 @@
-set.seed(55)
-
 # ~~~
 # ~~~ Hoff's code
 # ~~~
