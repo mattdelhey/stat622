@@ -1,3 +1,5 @@
+set.seed(1)
+
 alpha.1 <- 5
 beta.1  <- 2
 alpha.2 <- 2
@@ -22,8 +24,7 @@ expectation.mu <- model.mixture.beta.importance(
   , alpha.2 = alpha.2
   , beta.2  = beta.2
   , delta   = delta)
-mean(mixture)
-expectation.mu
+expect_equal(mean(mixture), expectation.mu, tolerance = 0.05)
 
 expectation.sigma2 <- model.mixture.beta.importance(
     n.samples
@@ -34,8 +35,7 @@ expectation.sigma2 <- model.mixture.beta.importance(
   , alpha.2 = alpha.2
   , beta.2  = beta.2
   , delta   = delta)
-var(mixture)
-expectation.sigma2
+expect_equal(var(mixture), expectation.sigma2, tolerance = 0.05)
 
 expectation.square <- model.mixture.beta.importance(
     n.samples
@@ -45,8 +45,7 @@ expectation.square <- model.mixture.beta.importance(
   , alpha.2 = alpha.2
   , beta.2  = beta.2
   , delta   = delta)
-var(mixture)
-expectation.square - expectation.mu^2
+expect_equal(var(mixture), expectation.square - expectation.mu^2, tolerance = 0.05)
 
 expectation.prob <- model.mixture.beta.importance(
     n.samples
@@ -58,5 +57,4 @@ expectation.prob <- model.mixture.beta.importance(
   , alpha.2 = alpha.2
   , beta.2  = beta.2
   , delta   = delta)
-expectation.prob
-mean(mixture >= 0.45 & mixture <= 0.55)
+expect_equal(expectation.prob, mean(mixture >= 0.45 & mixture <= 0.55), tolerance = 0.05)

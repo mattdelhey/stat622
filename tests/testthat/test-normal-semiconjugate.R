@@ -1,3 +1,5 @@
+set.seed(1)
+
 # ~~~
 # ~~~ Hoff's code
 # ~~~
@@ -36,7 +38,8 @@ PHI[s,]<-phi         }
 
 PHI2 <- model.normal.semiconjugate.gibbs(
     phi.0 = c(mean.y, var.y)
-  , gibbs.iters = 10000
+  , gibbs.samples = 10000
+  , gibbs.burnin = 5000
   , mu.0 = mu0
   , tau2.0 = t20
   , nu.0 = nu0

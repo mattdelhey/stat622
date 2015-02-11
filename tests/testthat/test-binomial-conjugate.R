@@ -1,3 +1,5 @@
+set.seed(1)
+
 a<-1  ; b<-1   #prior
 n<-10 ; y<-2   #data
 (analytic <- qbeta(c(.025,.975), a+y,b+n-y))

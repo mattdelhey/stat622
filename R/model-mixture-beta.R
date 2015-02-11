@@ -1,9 +1,7 @@
 model.mixture.beta.importance <- function(n.samples, h, alpha.1, beta.1, alpha.2, beta.2, delta, ...) {
     if (!is.function(h)) stop("h must be a function (use identity for expectation)")
 
-    #x <- rbeta(n.samples, 1, 1)
-    #weights <- dbetamixture(x, alpha.1, beta.1, alpha.2, beta.2, delta) / dbeta(x, 1, 1)
-
+    # Uniform envelope
     x <- runif(n.samples, 0, 1)
     weights <- dbetamixture(x, alpha.1, beta.1, alpha.2, beta.2, delta) / dunif(x, 0, 1)
 
@@ -22,11 +20,10 @@ model.mixture.beta.importance <- function(n.samples, h, alpha.1, beta.1, alpha.2
 
 rbetamixture <- function(n, alpha.1, beta.1, alpha.2, beta.2, delta) {
     check.betamixture(n, alpha.1, beta.1, alpha.2, beta.2, delta)
-    state.vec <- sample(1:2, prob = c(delta, 1 - delta), size = n.samples, replace = TRUE)    
+    # Equivilent to binomial(1, delta)
+    state.vec <- sample(1:2, prob = c(delta, 1 - delta), size = n.samples, replace = TRUE)
     rbeta(n = n.samples, shape1 = c(alpha.1, alpha.2)[state.vec], shape2 = c(beta.1, beta.2)[state.vec])
 }
-
-rbetamixtrue
 
 dbetamixture <- function(x, alpha.1, beta.1, alpha.2, beta.2, delta) {
     check.betamixture(length(x), alpha.1, beta.1, alpha.2, beta.2, delta)
