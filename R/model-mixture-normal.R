@@ -1,36 +1,24 @@
-#' @title model.mixture
-#' Posterior parameters for the semiconjugate mixture model
-model.mixture <- function(x, ) {
-    
-}
+model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
+                                       alpha, beta, mu.0, tau2.0, nu.0, sigma2.0,
+                                       y.bar, n.obs, s2, y) {
+    if (gibbs.samples %% 1 != 0) stop("number of iterations must be an integer")
 
-model.mixture.gibbs <- function(phi.0, gibbs.iters,
-                                a, b, mu.0, tau2.0, nu.0, sigma2.0,
-                                y.bar, n.obs, s2) {
-    if (length(phi.0) !=  & !is.vector(phi.0)) stop("phi must be a vector of length 2")
-    if (gibbs.iters %% 1 != 0) stop("number of iterations must be an integer")
+    gibbs.iters <- gibbs.samples + gibbs.burnin + 1
+    phi <- construct.phi(phi.0, gibbs.iters, gibbs.burnin,
+                         vars = c("theta.1", "theta.2", "sigma2.1", "sigma2.2", "p", "sum.x"))
 
-    # Initialize phi [matrix of dependent sequence of posterior samples]
-    phi.empty <- data.frame(
-        theta.1 = rep(NA, gibbs.iters)
-      , theta.2 = rep(NA, gibbs.iters)
-      , sigma2.1 = rep(NA, gibbs.iters)
-      , sigma2.2 = rep(NA, gibbs.iters)
-      , p = rep(NA, gibbs.iters)
-      , sum.x = rep(NA, gibbs.iters))
-    phi <- rbind(phi.0, phi.empty)
-
-    for (i in 2:(gibbs.iters+1)) {
-        # Full conditional of p
+    for (i in 2:gibbs.iters) {
+        # Full conditional (posterior) of p
         p.conditional <- model.binomial.conjugate(
-            y.sum = phi$sumx[i-1]
-          , alpha = a
-          , beta = b
+            y.sum = phi$sum.x[i-1]
+          , alpha = alpha
+          , beta = beta
           , n.obs = n.obs)
         phi$p[i] <- rbeta(1, p.conditional$alpha.n, p.conditional$beta.n)
 
         # Full conditional of X
-        phi$sum.x[i] <- rbinom(1, n.obs, phi$p[i] * rnorm(1, mean = phi$theta.1[i-1], sd = sqrt(phi$sigma.1[i-1])))
+        phi$sum.x[i] <- rbinom(1, n.obs, phi$p[i] *
+                                 prod(dnorm(y, mean = phi$theta.1[i-1], sd = sqrt(phi$sigma2.1[i-1]))))
 
         # Full conditional of theta.1
         theta.1.conditional <- model.normal.semiconjugate.theta(
@@ -66,7 +54,7 @@ model.mixture.gibbs <- function(phi.0, gibbs.iters,
             )
         phi$sigma2.1[i] <- 1 / rgamma(1, sigma2.1.conditional$nu.n / 2,
                                       sigma2.1.conditional$nu.n * sigma2.1.conditional$sigma2.n / 2)
-
+        
         sigma2.2.conditional <- model.normal.semiconjugate.sigma2(
             theta = phi$theta.2[i]
           , nu.0 = nu.0
@@ -77,9 +65,16 @@ model.mixture.gibbs <- function(phi.0, gibbs.iters,
             )
         phi$sigma2.2[i] <- 1 / rgamma(1, sigma2.2.conditional$nu.n / 2,
                                       sigma2.2.conditional$nu.n * sigma2.2.conditional$sigma2.n / 2)
-    }    
+    }
+    
+    phi <- list(
+        phi = phi
+      , eff.theta.1  = as.numeric(coda::effectiveSize(phi$theta.1))
+      , eff.theta.2  = as.numeric(coda::effectiveSize(phi$theta.2))
+      , eff.sigma2.1 = as.numeric(coda::effectiveSize(phi$sigma2.1))
+      , eff.sigma2.2 = as.numeric(coda::effectiveSize(phi$sigma2.1))
+      , eff.p        = as.numeric(coda::effectiveSize(phi$p))
+      , eff.sum.x    = as.numeric(coda::effectiveSize(phi$sum.x)))
     return(phi)
 }
 
-
-normal.mixture.conjugate <- function()

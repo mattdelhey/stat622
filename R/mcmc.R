@@ -1,3 +1,20 @@
+construct.phi <- function(phi.0, imh.iters, imh.burnin, vars) {
+    stopifnot(length(phi.0) == length(vars), is.vector(vars), is.vector(phi.0))
+    
+    # Subtract one row because we are going to add phi.0
+    # Aadd one coloumn because we are going to add a burnin status
+    phi.empty <- as.data.frame(matrix(NA, nrow = imh.iters-1, ncol = length(vars)+1))
+    names(phi.empty) <- c(vars, "burnin")    
+    phi <- rbind(phi.0, phi.empty)
+
+    # Construct burnin status
+    phi$burnin[1] <- "init"
+    phi$burnin[2:(imh.burnin+1)] <- "burnin"
+    phi$burnin[(imh.burnin+1):nrow(phi)] <- "sample"
+
+    return(phi)
+}
+
 #' @title effective.sample.size
 #' Calculate effective sample size
 effective.sample.size <- function(theta) {

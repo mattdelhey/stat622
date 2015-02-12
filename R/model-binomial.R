@@ -7,7 +7,7 @@ model.binomial.conjugate <- function(x = NULL, n.obs = NULL, y.sum = NULL, alpha
     beta.n <- beta + n.obs - data$y.sum
 
     # Ensoure our parameters are within their support
-    stopifnot(alpha.n > 0 & beta.n > 0)
+    stopifnot(alpha.n > 0, beta.n > 0)
 
     posterior.parameters <- list(
         alpha.n = alpha.n
