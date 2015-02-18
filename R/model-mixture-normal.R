@@ -14,25 +14,19 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
         
         # Full conditional (posterior) of p
         p.conditional <- model.binomial.conjugate(
-            y.sum = phi$sum.x2[i-1]
+            y.sum = phi$sum.x[i-1]
           , alpha = alpha
           , beta  = beta
           , n.obs = n.obs)
         phi$p[i] <- rbeta(1, p.conditional$alpha.n, p.conditional$beta.n)
         
-        # Full conditional of X
-        z.1 <- prod(dnorm(y, mean = phi$theta.1[i-1], sd = sqrt(phi$sigma2.1[i-1]), log = FALSE))
-        z.2 <- prod(dnorm(y, mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]), log = FALSE))
-        phi$sum.x[i] <- rbinom(1, n.obs, phi$p[i]*z.1 / (phi$p[i]*z.1 + (1-phi$p[i])*z.2))
-
-        #x <- mclapply(1:n.obs, function(j) {
         x <- parLapply(cl, 1:n.obs, function(j) {
             dn1 <- dnorm(y[j], mean = phi$theta.1[i-1], sd = sqrt(phi$sigma2.1[i-1]))
             dn2 <- dnorm(y[j], mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]))
             rbinom(1, 1, phi$p[i]*dn1 / (phi$p[i]*dn1 + (1-phi$p[i])*dn2))
         })
         x.vec <- unlist(x)
-        phi$sum.x2[i] <- sum(x.vec)
+        phi$sum.x[i] <- sum(x.vec)
 
         # Define new data statistics for Y_1 and Y_2
         n.obs.1 <- sum(x.vec)
@@ -97,8 +91,7 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
       , eff.sigma2.2 = as.numeric(coda::effectiveSize(phi$sigma2.1))
       , eff.p        = as.numeric(coda::effectiveSize(phi$p))
       , eff.sum.x    = as.numeric(coda::effectiveSize(phi$sum.x))
-      , eff.sum.x2   = as.numeric(coda::effectiveSize(phi$sum.x2)))
-      #, eff2.sum.x2  = effective.sample.size(phi$sum.x2, n.lags = 1000))
+      #, eff2.sum.x  = effective.sample.size(phi$sum.x2, n.lags = 1000))
     return(phi)
 }
 
