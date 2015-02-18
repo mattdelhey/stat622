@@ -70,9 +70,10 @@ plot.mcmc.trace.params <- function(theta1, theta2, burnin, strip1 = TRUE,
 }
 
 plot.mcmc.marginal <- function(theta, burnin, strip1 = TRUE,
-                               xlab = "theta", ylab = "probability") {
-    hist(theta[burnin == "sample"], main = "", xlab = xlab, prob = TRUE)
-    lines(density(theta[burnin == "sample"]), col = "blue")
+                               xlab = "theta", ylab = "probability",
+                               main = "", ...) {
+    hist(theta[burnin == "sample"], main = main, xlab = xlab, prob = TRUE, ...)
+    lines(density(theta[burnin == "sample"]), col = "blue", lwd = 3)
 }
 
 plot.mcmc.marginal2 <- function(theta, burnin, strip1 = TRUE,

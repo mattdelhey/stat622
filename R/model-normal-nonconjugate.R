@@ -13,7 +13,7 @@ model.normal.nonconjugate.imh <- function(phi.0, imh.samples, imh.burnin,
     for (i in 2:imh.iters) {
         # ~~~ Update theta
         # Sample from (symmetric??) proposal distribtuion (independent of phi)
-        theta.proposal <- runif(1, 0, 1)
+        theta.proposal <- rbeta(1, alpha, beta)
 
         # Compute (log) acceptance ratio (ratio of likilihood * prior)       
         log.r <- model.normal.nonconjugate.theta.r(y = y, alpha = alpha, beta = beta
@@ -28,7 +28,7 @@ model.normal.nonconjugate.imh <- function(phi.0, imh.samples, imh.burnin,
 
         # ~~~ Update sigma
         # Sample from (symmetric??) proposal distribution (independent of phi)
-        sigma2.proposal <- rlnorm(1, m, sqrt(v)/4)
+        sigma2.proposal <- rlnorm(1, m, sqrt(v))
 
         log.r <- model.normal.nonconjugate.sigma2.r(y = y, m = m, v = v
                                                   , sigma2.proposal = sigma2.proposal
@@ -52,14 +52,12 @@ model.normal.nonconjugate.imh <- function(phi.0, imh.samples, imh.burnin,
 
 model.normal.nonconjugate.sigma2.r <- function(y, sigma2.proposal, sigma2.state, theta.state, m, v) {
     sigma2.proposal.posterior <- sum(dnorm(y, theta.state, sqrt(sigma2.proposal), log = TRUE)) +
-      dlnorm(sigma2.proposal, m, sqrt(v)/4, log = TRUE)
+      dlnorm(sigma2.proposal, m, sqrt(v), log = TRUE) 
     
     sigma2.state.posterior <- sum(dnorm(y, theta.state, sqrt(sigma2.state), log = TRUE)) +
-      dlnorm(sigma2.state, m, sqrt(v)/4, log = TRUE)
+      dlnorm(sigma2.state, m, sqrt(v), log = TRUE)
 
-    #J.state <- dlnorm(sigma2.state, m, v, log = TRUE)
     J.state <- 0
-    #J.proposal <- dlnorm(sigma2.proposal, m, v, log = TRUE)
     J.proposal <- 0
 
     log.r <- (sigma2.proposal.posterior + J.state) - (sigma2.state.posterior + J.proposal)
@@ -74,11 +72,7 @@ model.normal.nonconjugate.theta.r <- function(y, theta.proposal, theta.state, si
     theta.state.posterior <- sum(dnorm(y, theta.state, sqrt(sigma2.state), log = TRUE)) +
       dbeta(theta.state, alpha, beta, log = TRUE)
 
-    #J.state <- dunif(theta.state, 0, 1, log = TRUE)
-    #J.state <- dbeta(theta.state, 1, 1, log = TRUE)
     J.state <- 0
-    #J.proposal <- dunif(theta.proposal, 0, 1, log = TRUE)
-    #J.proposal <- dbeta(theta.proposal, 1, 1, log = TRUE)
     J.proposal <- 0
 
     log.r <- (theta.proposal.posterior + J.state) - (theta.state.posterior + J.proposal)
