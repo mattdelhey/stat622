@@ -8,6 +8,12 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
     gibbs.iters <- gibbs.samples + gibbs.burnin + 1
     phi <- construct.phi(phi.0, gibbs.iters, gibbs.burnin, vars = names(phi.0))
 
+    x.mat <- matrix(NA, nrow = gibbs.iters, ncol = n.obs)
+    x.mat[1, ] <- rbinom(n.obs, 1, 0.5) # initial x-vector
+    phi$sum.x[1] <- sum(x.mat[1, ]) # keep initalized vectors the same
+    
+    y.new <- rep(NA, length(gibbs.iters))
+
     for (i in 2:gibbs.iters) {
         if (verbose & i %% 500 == 0)
             message(sprintf("iteration: %i", i))
@@ -25,16 +31,17 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
             dn2 <- dnorm(yi, mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]))
             rbinom(1, 1, phi$p[i]*dn1 / (phi$p[i]*dn1 + (1-phi$p[i])*dn2))
         })
-        x.vec <- unlist(x.conditional)        
-        phi$sum.x[i] <- sum(x.vec)
+
+        x.mat[i, ] <- unlist(x.conditional)
+        phi$sum.x[i] <- sum(x.mat[i, ])
 
         # Define new data statistics for Y_1 and Y_2
-        n.obs.1 <- sum(x.vec)
+        n.obs.1 <- phi$sum.x[i]
         n.obs.2 <- n.obs - n.obs.1
-        y.bar.1 <- sum(y[x.vec == 1]) / n.obs.1
-        y.bar.2 <- sum(y[x.vec == 0]) / n.obs.2
-        s2.1 <- var(y[x.vec == 1])
-        s2.2 <- var(y[x.vec == 0])
+        y.bar.1 <- sum(y[x.mat[i, ] == 1]) / n.obs.1
+        y.bar.2 <- sum(y[x.mat[i, ] == 0]) / n.obs.2
+        s2.1 <- var(y[x.mat[i, ] == 1])
+        s2.2 <- var(y[x.mat[i, ] == 0])
         stopifnot(n.obs.1 + n.obs.2 == n.obs)
 
         # Full conditional of theta.1
@@ -85,15 +92,18 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
         # Predictive distribution
         x.new <- rbinom(1, 1, phi$p[i])
         if (x.new == 1) {
-            y.new <- rnorm(1, 1, 1)   
+            y.new[i] <- rnorm(1, mean = phi$theta.1[i], sd = sqrt(phi$sigma2.1[i]))
         }
-        if (x.new == 2) {
-            y.new <- 1
+        else if (x.new == 0) {
+            y.new[i] <- rnorm(1, mean = phi$theta.2[i], sd = sqrt(phi$sigma2.2[i]))
         }
+        
     }
     
     phi <- list(
-        phi = phi
+        phi    = phi
+      , x.mat  = x.mat
+      , y.pred = 
       , eff.theta.1  = as.numeric(coda::effectiveSize(phi$theta.1))
       , eff.theta.2  = as.numeric(coda::effectiveSize(phi$theta.2))
       , eff.sigma2.1 = as.numeric(coda::effectiveSize(phi$sigma2.1))

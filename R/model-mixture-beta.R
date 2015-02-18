@@ -13,7 +13,9 @@ model.mixture.beta.importance <- function(n.samples, h, alpha.1, beta.1, alpha.2
     expectation.h.raw <- sum(h(x, ...) * weights) / n.samples
 
     if (!isTRUE(all.equal(expectation.h, expectation.h.raw, tolerance = 0.01)))
-        warning("Expectation differs for standardized and raw weights ")
+        warning("Expectation differs for standardized and raw weights\n",
+                sprintf("Standardized: %f. \t Non-standardized: %f.",
+                        expectation.h, expectation.h.raw))
     
     return(expectation.h)
 }
