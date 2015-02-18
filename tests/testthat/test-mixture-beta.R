@@ -6,15 +6,15 @@ alpha.2 <- 2
 beta.2  <- 8
 delta   <- 0.3
 
+plot <- FALSE
 n.samples <- 100000
 
 mixture <- rbetamixture(n.samples, alpha.1, beta.1, alpha.2, beta.2, delta)
-hist(mixture, prob = TRUE)
-lines(density(mixture))
 
-square <- function(x) x^2
-square.minus <- function(x, mu) (x - mu)^2
-indicator <- function(x, lower, upper) ifelse(x >= lower & x <= upper, 1, 0)
+if (plot) {
+    hist(mixture, prob = TRUE)
+    lines(density(mixture))    
+}
 
 expectation.mu <- model.mixture.beta.importance(
     n.samples
