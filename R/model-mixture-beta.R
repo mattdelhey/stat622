@@ -22,7 +22,9 @@ rbetamixture <- function(n, alpha.1, beta.1, alpha.2, beta.2, delta) {
     check.betamixture(n, alpha.1, beta.1, alpha.2, beta.2, delta)
     # Equivilent to binomial(1, delta)
     state.vec <- sample(1:2, prob = c(delta, 1 - delta), size = n.samples, replace = TRUE)
-    rbeta(n = n.samples, shape1 = c(alpha.1, alpha.2)[state.vec], shape2 = c(beta.1, beta.2)[state.vec])
+    alpha.vec <- c(alpha.1, alpha.2)
+    beta.vec <- c(beta.1, beta.2)
+    rbeta(n = n, shape1 = alpha.vec[state.vec], shape2 = beta.vec[state.vec])
 }
 
 dbetamixture <- function(x, alpha.1, beta.1, alpha.2, beta.2, delta) {
@@ -31,8 +33,12 @@ dbetamixture <- function(x, alpha.1, beta.1, alpha.2, beta.2, delta) {
 }
 
 check.betamixture <- function(n, alpha.1, beta.1, alpha.2, beta.2, delta) {
-    stopifnot(delta >= 0 & delta <= 1 & alpha.1 > 0 & alpha.2 > 0 & beta.1 > 0 & beta.2 > 0 & n %% 1 == 0)
+    stopifnot(delta >= 0, delta <= 1, alpha.1 > 0, alpha.2 > 0,
+              beta.1 > 0, beta.2 > 0, n %% 1 == 0)
 }
 
+square <- function(x) x^2
+square.minus <- function(x, mu) (x - mu)^2
+indicator <- function(x, lower, upper) ifelse(x >= lower & x <= upper, 1, 0)
 
     
