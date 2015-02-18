@@ -17,10 +17,11 @@ construct.phi <- function(phi.0, imh.iters, imh.burnin, vars) {
 
 #' @title effective.sample.size
 #' Calculate effective sample size
-effective.sample.size <- function(theta) {
-    #var.mc <- var(theta) / length(theta)
-    #var.mcmc <- var.mc + acf()
-    nrow(theta) * var(theta) / spectrum(theta)$spec
+effective.sample.size <- function(mcmc.samples, n.lags = 100) {
+    n <- length(mcmc.samples)
+    ro <- acf(mcmc.samples, lag.max = max(n, n.lags))$acf
+    ess <- n / (1 + 2 * sum(ro))
+    f <- spectrum(mcmc.samples, method = "ar")    
 }
 
 #' @title mc.quantile.ci
@@ -39,15 +40,16 @@ mc.quantile.ci <- function(posterior.sample, alpha = 0.05) {
 
 
 plot.mcmc.trace <- function(theta, burnin, strip1 = TRUE,
-                            xlab = "index", ylab = "theta") {
-    library(ggplot2)
+                            xlab = "index", ylab = "theta",
+                            ...) {
+    if (!require(ggplot2)) stop("ggplot2 required")    
 
     if (strip1) {
         theta <- theta[-1]
         burnin <- burnin[-1]
     }
     
-    qplot(x = 1:length(theta), y = theta, color = burnin, geom = "line") +
+    qplot(x = 1:length(theta), y = theta, color = burnin, geom = "line", ...) +
       theme.tufte() + xlab(xlab) + ylab(ylab)
 }
 
@@ -69,13 +71,16 @@ plot.mcmc.trace.params <- function(theta1, theta2, burnin, strip1 = TRUE,
 
 plot.mcmc.marginal <- function(theta, burnin, strip1 = TRUE,
                                xlab = "theta", ylab = "probability") {
-    library(ggplot2)
+    hist(theta[burnin == "sample"], main = "", xlab = xlab, prob = TRUE)
+    lines(density(theta[burnin == "sample"]), col = "blue")
+}
 
+plot.mcmc.marginal2 <- function(theta, burnin, strip1 = TRUE,
+                               xlab = "theta", ylab = "probability") {
+    library(ggplot2)
     # Discard burnin
     theta <- theta[burnin == "sample"]
-
     breaks <- hist(theta, prob = TRUE)$breaks
-
     ggplot(data = data.frame(), aes(x = theta)) +
       geom_histogram(aes(y = ..density..), fill = "white", color = "black", breaks = breaks) +
                      #binwidth = (range(theta)[2]-range(theta)[1]) / 100) +
@@ -102,3 +107,4 @@ theme.tufte <- function(base_size = 11, base_family = "serif", ticks = TRUE) {
     }
     ret
 }
+
