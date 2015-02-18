@@ -17,11 +17,10 @@ construct.phi <- function(phi.0, imh.iters, imh.burnin, vars) {
 
 #' @title effective.sample.size
 #' Calculate effective sample size
-effective.sample.size <- function(mcmc.samples, n.lags = 100) {
+effective.sample.size <- function(mcmc.samples) {
     n <- length(mcmc.samples)
-    ro <- acf(mcmc.samples, lag.max = max(n, n.lags))$acf
-    ess <- n / (1 + 2 * sum(ro))
-    f <- spectrum(mcmc.samples, method = "ar")    
+    f <- spectrum(mcmc.samples, method = "ar", plot = FALSE)    
+    n * var(mcmc.samples) / f
 }
 
 #' @title mc.quantile.ci
