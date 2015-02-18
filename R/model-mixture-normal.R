@@ -20,12 +20,12 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
           , n.obs = n.obs)
         phi$p[i] <- rbeta(1, p.conditional$alpha.n, p.conditional$beta.n)
         
-        x <- parLapply(cl, 1:n.obs, function(j) {
-            dn1 <- dnorm(y[j], mean = phi$theta.1[i-1], sd = sqrt(phi$sigma2.1[i-1]))
-            dn2 <- dnorm(y[j], mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]))
+        x.conditional <- parLapply(cl, y, function(yi) {
+            dn1 <- dnorm(yi, mean = phi$theta.1[i-1], sd = sqrt(phi$sigma2.1[i-1]))
+            dn2 <- dnorm(yi, mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]))
             rbinom(1, 1, phi$p[i]*dn1 / (phi$p[i]*dn1 + (1-phi$p[i])*dn2))
         })
-        x.vec <- unlist(x)
+        x.vec <- unlist(x.conditional)        
         phi$sum.x[i] <- sum(x.vec)
 
         # Define new data statistics for Y_1 and Y_2
@@ -72,7 +72,7 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
                                       sigma2.1.conditional$nu.n * sigma2.1.conditional$sigma2.n / 2)
         
         sigma2.2.conditional <- model.normal.semiconjugate.sigma2(
-            theta    = phi$theta.2[i]
+           theta     = phi$theta.2[i]
           , nu.0     = nu.0
           , sigma2.0 = sigma2.0
           , n.obs    = n.obs.2
@@ -81,6 +81,15 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
             )
         phi$sigma2.2[i] <- 1 / rgamma(1, sigma2.2.conditional$nu.n / 2,
                                       sigma2.2.conditional$nu.n * sigma2.2.conditional$sigma2.n / 2)
+
+        # Predictive distribution
+        x.new <- rbinom(1, 1, phi$p[i])
+        if (x.new == 1) {
+            y.new <- rnorm(1, 1, 1)   
+        }
+        if (x.new == 2) {
+            y.new <- 1
+        }
     }
     
     phi <- list(
@@ -90,8 +99,7 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
       , eff.sigma2.1 = as.numeric(coda::effectiveSize(phi$sigma2.1))
       , eff.sigma2.2 = as.numeric(coda::effectiveSize(phi$sigma2.1))
       , eff.p        = as.numeric(coda::effectiveSize(phi$p))
-      , eff.sum.x    = as.numeric(coda::effectiveSize(phi$sum.x))
-      #, eff2.sum.x  = effective.sample.size(phi$sum.x2, n.lags = 1000))
+      , eff.sum.x    = as.numeric(coda::effectiveSize(phi$sum.x)))
     return(phi)
 }
 
