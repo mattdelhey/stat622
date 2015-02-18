@@ -125,7 +125,7 @@ rnormalmixture <- function(n, theta.1, theta.2, sigma2.1, sigma2.2, delta) {
     rnorm(n = n, mu = theta.vec[state.vec], sd = sqrt(sigma2.vec[state.vec]))
 }
 
-dbetamixture <- function(x, theta.1, theta.2, sigma2.1, sigma2.2, delta) {
+dnormalmixture <- function(x, theta.1, theta.2, sigma2.1, sigma2.2, delta) {
     check.normalmixture(length(x), theta.1, theta.2, sigma2.1, sigma2.2, delta)
     delta*dnorm(x, theta.1, sqrt(sigma2.1)) + (1-delta)*dnorm(x, theta.2, sqrt(sigma2.2))
 }
