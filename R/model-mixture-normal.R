@@ -1,18 +1,18 @@
 model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
                                        alpha, beta, mu.0, tau2.0, nu.0, sigma2.0,
-                                       y, verbose = FALSE) {
+                                       y, verbose = FALSE, n.cores = 4) {
     if (gibbs.samples %% 1 != 0) stop("number of iterations must be an integer")
 
+    cl <- makeCluster(n.cores)
     n.obs <- length(y)
 
     gibbs.iters <- gibbs.samples + gibbs.burnin + 1
     phi <- construct.phi(phi.0, gibbs.iters, gibbs.burnin, vars = names(phi.0))
 
     x.mat <- matrix(NA, nrow = gibbs.iters, ncol = n.obs)
-    x.mat[1, ] <- rbinom(n.obs, 1, 0.5) # initial x-vector
-    phi$sum.x[1] <- sum(x.mat[1, ]) # keep initalized vectors the same
-    
-    y.new <- rep(NA, length(gibbs.iters))
+    x.mat[1, ] <- rbinom(n.obs, 1, 0.5)   # init x-vector
+    phi$sum.x[1] <- sum(x.mat[1, ])       # keep initalized vectors the same    
+    y.new <- rep(NA, length(gibbs.iters)) # init predictive y draws
 
     for (i in 2:gibbs.iters) {
         if (verbose & i %% 500 == 0)
@@ -31,7 +31,7 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
             dn2 <- dnorm(yi, mean = phi$theta.2[i-1], sd = sqrt(phi$sigma2.2[i-1]))
             rbinom(1, 1, phi$p[i]*dn1 / (phi$p[i]*dn1 + (1-phi$p[i])*dn2))
         })
-
+        
         x.mat[i, ] <- unlist(x.conditional)
         phi$sum.x[i] <- sum(x.mat[i, ])
 
@@ -91,19 +91,17 @@ model.mixture.normal.gibbs <- function(phi.0, gibbs.samples, gibbs.burnin,
 
         # Predictive distribution
         x.new <- rbinom(1, 1, phi$p[i])
-        if (x.new == 1) {
+        if (x.new == 1)
             y.new[i] <- rnorm(1, mean = phi$theta.1[i], sd = sqrt(phi$sigma2.1[i]))
-        }
-        else if (x.new == 0) {
+        else
             y.new[i] <- rnorm(1, mean = phi$theta.2[i], sd = sqrt(phi$sigma2.2[i]))
-        }
-        
     }
     
+    stopCluster(cl)    
     phi <- list(
         phi    = phi
       , x.mat  = x.mat
-      , y.pred = 
+      , y.new  = y.new
       , eff.theta.1  = as.numeric(coda::effectiveSize(phi$theta.1))
       , eff.theta.2  = as.numeric(coda::effectiveSize(phi$theta.2))
       , eff.sigma2.1 = as.numeric(coda::effectiveSize(phi$sigma2.1))

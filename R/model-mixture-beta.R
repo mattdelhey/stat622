@@ -40,7 +40,9 @@ check.betamixture <- function(n, alpha.1, beta.1, alpha.2, beta.2, delta) {
 }
 
 square <- function(x) x^2
+
 square.minus <- function(x, mu) (x - mu)^2
+
 indicator <- function(x, lower, upper) ifelse(x >= lower & x <= upper, 1, 0)
 
     
