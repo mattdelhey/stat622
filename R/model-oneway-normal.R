@@ -12,7 +12,7 @@
 #' The model is similar to the Frequentist one-way random effects model (`nlme` and `lme` in R) and
 #' assumes that the within-network variance is equal across all networks (which is likely violated in
 #' the case of networks like ESPN). 
-one.way.gibbs.sampler <- function(y = NULL, g, n.samples, n.burnin, priors,
+oneway.gibbs.sampler <- function(y = NULL, g, n.samples, n.burnin, priors,
                                   y.bar = NULL, y.s2 = NULL, y.n = NULL) {
 
     stopifnot(is.vector(priors), is.vector(g), n.samples %% 1 == 0, n.burnin %% 1 ==0)
