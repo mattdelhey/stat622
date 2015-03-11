@@ -1,5 +1,94 @@
+#' @title oneway.uniform
+#' Pg. 115 BDA3
+#' Assumes that sigma2 is known. In this case, use sample estimate.
+#' This isn't a horrible assumption, see BDA3 end of Ch 8.
+oneway.uniform <- function(y, g, size) {
+    ybar.j <- tapply(y, g, mean)
+    sigma2.j <- tapply(y, g, var) # assume known sigma2
+
+    tau2 <- sample.oneway.tau2(size, sigma2.max = 120, sigma2.j, ybar.j)
+    mu <- sample.oneway.mu(size, tau2, ybar.j, sigma2.j)
+    theta.j <- sample.oneway.theta(size, mu, tau2, ybar.j, sigma2.j)
+    
+    colnames(theta.j) <- names(ybar.j)
+    return(list(tau2 = tau2, mu = mu. theta.j = theta.j))
+}
+
+#' @title sample.oneway.theta
+sample.oneway.theta <- function(size, mu, tau2, ybar.j, sigma2.j) {
+    theta.est <- t(sapply(1:size, function(i)
+        oneway.theta(mu[i], tau2[i], ybar.j, sigma2.j)))
+            
+    t(sapply(1:size, function(i)
+        sapply(1:length(ybar.j), function(j)
+            rnorm(1, unlist(theta.est[i, 1])[j], sqrt(unlist(theta.est[i, 2])[j])))))
+}
+
+#' @title sample.oneway.mu
+sample.oneway.mu <- function(size, tau2, ybar.j, sigma2.j) {
+    mu.est <- t(sapply(tau2, oneway.mu, ybar.j, sigma2.j))
+    sapply(1:size, function(i)
+        rnorm(1, mu.est[i, 1], sqrt(mu.est[i, 2])))
+}
+
+#' @title sample.oneway.tau2
+sample.oneway.tau2 <- function(size, sigma2.max, sigma2.j, ybar.j) {
+    tau2.grid <- seq(from = 1, to = sigma2.max, length.out = 1000)
+    mu.est <- t(sapply(tau2.grid, oneway.mu, ybar.j, sigma2.j))
+
+    p.tau2 <- sapply(1:length(tau2.grid), function(i)
+        p.tau.given.y(tau2 = tau2.grid[i], mu.est = mu.est[i, 1], V.mu = mu.est[i, 2],
+                      sigma2.j = sigma2.j, ybar.j = ybar.j))
+    #p.tau2 <- sapply(tau2.grid, p.tau.given.y, mu.est[, 1], mu.est[, 2], sigma2.j, ybar.j)
+    #p.tau2 <- sapply(tau2.grid, oneway.tau2, sigma2.j, ybar.j)
+    sample(tau2.grid, size, prob = exp(p.tau2 - max(p.tau2)), replace = TRUE)
+}
+
+#' @title p.tau.given.y
+#' @note Should be changed to log-scale for numerical stability.
+p.tau.given.y <- function(tau2, mu.est, V.mu, ybar.j, sigma2.j, p.tau = 1 ) {
+    #log(p.tau) + 0.5*log(V.mu) +
+    #  sum( -0.5*log(sigma2.j + tau2) + (-(ybar.j - mu.est)^2 / (2*(sigma2.j +tau2))) )
+    sum(dnorm(ybar.j, mu.est, sqrt(sigma2.j + tau2), log = TRUE)) -
+      dnorm(mu.est, mu.est, sqrt(V.mu), log = TRUE)
+}
+  
+#' @title oneway.tau2
+#' Pg. 117 BDA3
+#' @note Assumes that tau2 \propto 1
+oneway.tau2 <- function(tau2, sigma2.j, ybar.j) {
+    #est <- oneway.mu(tau2, ybar.j, sigma2.j, list = TRUE)
+    est <- t(sapply(tau2, oneway.mu, ybar.j, sigma2.j))
+    #sqrt(est$V.mu) * prod( (sigma2.j + tau2)^(-1/2) *
+    #  exp( -(ybar.j - est$mu.hat)^2 / (2*sigma2.j + 2*tau2) ) )
+    sqrt(est[, 2]) * prod( (sigma2.j + tau2)^(-1/2) *
+      exp( -(ybar.j - est[, 1])^2 / (2*sigma2.j + 2*tau2) ) )
+}
+
+#' @title oneway.theta
+#' Pg. 116 BDA3
+oneway.theta <- function(mu, tau2, ybar.j, sigma2.j) {
+    theta.hat.j <- (ybar.j/sigma2.j + mu/tau2) / (1/sigma2.j + 1/tau2)
+    V.j <- 1 / (1/sigma2.j + 1/tau2)
+    #theta.hat.j <- outer(mu/tau2, ybar.j/sigma2.j, "+") / outer(1/tau2, 1/sigma2.j, "+")
+    #V.j <- t(1 / outer(1/sigma2.j, 1/tau2, "+"))
+    return(list(theta.hat.j = theta.hat.j, V.j = V.j))
+}
+
+#' @title oneway.mu
+#' Pg. 117 BDA3
+oneway.mu <- function(tau2, ybar.j, sigma2.j) {
+    mu.hat <- sum(ybar.j / (sigma2.j + tau2)) / sum(1 / (sigma2.j + tau2))
+    V.mu <- 1 / sum(1 / (sigma2.j + tau2))
+    return(cbind(mu.hat, V.mu))        
+    ## mu.hat <- colSums(matrix(1/ybar.j, ncol = 25) %*% outer(sigma2.j, tau2, "+")) /
+    ##   colSums(1 / outer(sigma2.j, tau2, "+"))
+    ## V.mu <- 1 / colSums(1 / outer(sigma2.j, tau2, "+"))
+    ##return(list(mu.hat = mu.hat, V.mu = V.mu))
+}
+
 #' @title oneway.normal.gibbs.sampler
-#' @description Gibbs sampler for the "one-way normal random effects model with known
+#' Gibbs sampler for the "one-way normal random effects model with known
 #' variance". This is a simple case of hierarchical linear models.
 #' @details
 #' The following is the code for the Gibbs sampler. The result is iid samples from the posterior
@@ -90,8 +179,7 @@ var.ss <- function(sum.x, sum.x.sq, n) {
 
 mean.ss <- function(sum.x, n) sum.x / n
 
-
-Mode <- function(x) {
+mowd <- function(x) {
     ux <- unique(x)
     ux[which.max(tabulate(match(x, ux)))]
 }
