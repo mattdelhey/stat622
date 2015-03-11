@@ -1,3 +1,67 @@
+#' @title shrink.estimate
+#' @param lambda  regularization parameter in [0, 1], vector of length K or scalar
+#' @param ybar vector of group means
+#' @details Lambda = 1 is no pooling (all groups different). Lambda = 0 is complete pooling (all
+#' groups same). Values of lambda should probably be > n/sum(n).
+shrink.estimate <- function(lambda, ybar, n) {
+    grand.mean <- mean(ybar)
+    lambda * ybar + (1 - lambda) * grand.mean
+}
+
+#' @title emperical.bayes
+#' "An Introduction to Emperical Bayes Data Analysis", Casella 1985
+emperical.bayes <- function(y, g, sigma2) {
+    ybar.j <- tapply(y, g, mean)
+    ybar.. <- mean(y)
+
+    #emperical.bayes.est(ybar.j, ybar, sigma2 = 2)
+    emperical.bayes.aov(y, g)
+}
+
+emperical.bayes.aov <- function(y, g) {
+    m <- length(unique(g))
+    a <- anova(lm(y ~ g))
+    T <- a$"F value"[1]
+
+    ybar.j <- tapply(y, g, mean)
+    ybar.. <- mean(y)
+    
+    (m-3)/(m-1) * 1/T * ybar.. + (1- ((m-3)/(m-1)*(1/T))) *ybar.j
+}
+
+#' @title emperical.bayes.est
+emperical.bayes.est <- function(ybar.j, ybar, sigma2) {
+    ss <- sum( (ybar.j - ybar..)^2 )
+    ( ((m-3)*sigma2) / ss ) * ybar.. + (1 - ((m-3)*sigma2) / ss) * ybar.j
+}
+
+
+#' @title emperical.oneway
+#' Pg. 118 BDA3
+#' The problems of this approach are detailed under "Difficulty with a natural non-Bayesian estimate
+#' of the hyperparameters". In summary, we are ignoring our uncertainty about mu and tau and so we
+#' will be over-confident in our estimates of theta.
+emperical.oneway <- function(y, g, size) {
+    ybar.j <- tapply(y, g, mean)
+    sigma2.j <- tapply(y, g, var) # assume known sigma2
+    ybar.. <- sum(ybar.j / sigma2.j) / sum(1/sigma2.j) # pooled estimate
+
+    # Use ANOVA point estimates for tau2 and mu
+    a <- anova(lm(y ~ g))
+    ms.b <- a[1, "Mean Sq"]
+    ms.w <- a[2, "Mean Sq"]
+    tau2 <- (ms.b - ms.w) / length(y) * 100
+    mu <- ybar..
+
+    theta.hat <- (ybar.j/sigma2.j + mu/tau2) / (1/sigma2.j + 1/tau2)
+    V. <- 1 / (1/sigma2.j + 1/tau2)
+
+    theta <- (sigma2.j / (sigma2.j + tau2))*mu +
+      (tau2 / (tau2 + sigma2.j)) * ybar.j
+
+    return(theta)
+}
+
 #' @title oneway.uniform
 #' Pg. 115 BDA3
 #' Assumes that sigma2 is known. In this case, use sample estimate.
@@ -11,7 +75,7 @@ oneway.uniform <- function(y, g, size) {
     theta.j <- sample.oneway.theta(size, mu, tau2, ybar.j, sigma2.j)
     
     colnames(theta.j) <- names(ybar.j)
-    return(list(tau2 = tau2, mu = mu. theta.j = theta.j))
+    return(list(tau2 = tau2, mu = mu, theta.j = theta.j))
 }
 
 #' @title sample.oneway.theta
