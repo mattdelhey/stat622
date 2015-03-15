@@ -6,4 +6,4 @@ Description: What the package does (one paragraph)
 Depends: R (>= 3.1.2)
 License: What license is it under?
 LazyData: true
-Suggests: testthat, ggplot2, coda
+Suggests: testthat, ggplot2, coda, parallel

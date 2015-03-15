@@ -46,8 +46,7 @@ model.normal.semiconjugate.theta <- function(sigma2, mu.0, tau2.0, n.obs, y.bar)
     tau2.n <- 1 / ( 1/tau2.0 + n.obs/sigma2 )
     posterior.parameters.theta <- list(
         mu.n = mu.n
-      , tau2.n = tau2.n
-        )
+      , tau2.n = tau2.n)
     return(posterior.parameters.theta)
 }
 
@@ -59,7 +58,6 @@ model.normal.semiconjugate.sigma2 <- function(theta, nu.0, sigma2.0, n.obs, y.ba
     sigma2.n <- (1/nu.n) * (nu.0*sigma2.0 + (n.obs-1)*s2 + n.obs*(y.bar - theta)^2)
     posterior.parameters.sigma2 <- list(
         nu.n = nu.n
-      , sigma2.n = sigma2.n
-        )
+      , sigma2.n = sigma2.n)
     return(posterior.parameters.sigma2)
 }
