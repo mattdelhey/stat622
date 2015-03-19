@@ -64,7 +64,7 @@ predict.regression <- function(beta.hat, Xnew, add.intercept = FALSE) {
 }
 
 plot.regression <- function(y, yhat) {
-    mse <- mse(y, yhat)
+    mse <- mse(y, yhat) #mad(y,yhat)
     plot(y, yhat, main = sprintf("mse: %.3f", mse))
     mse
 }
@@ -82,9 +82,18 @@ print.reg <- function(f, ...) {
     printCoefmat(x)
 }
 
-mse <- function(y, yhat) {
+mse2 <- function(y, yhat) {
     1/length(y) * sum( (y - yhat)^2 )
 }
+
+mse <- function(y, yhat) {
+    mean( (y - yhat)^2 )
+}
+
+mad <- function(y, yhat) {
+    mean( abs(y - yhat))
+}
+
 
 expectation.beta <- function(g, ols.beta.hat) {
     (g/(g+1)) * ols.beta.hat
@@ -131,4 +140,32 @@ gprior.v <- function(g, sigma2, X) {
 
 gprior.m <- function(g, X, y) {
     (g/(g+1)) * solve(t(X) %*% X) %*% t(X) * y
+}
+
+
+#' Split data into arbitrary partitions
+#' @param n number of indicies
+#' @param p vector that sums to one
+#' @return List of split indicies
+#' @family utils
+#' @export
+split.data <- function(n, p) {
+    if (sum(p) != 1) stop("Split proportions must sum to one.")
+    if (length(n) != 1) stop("n is the number of indicies")
+
+    k <- length(p)
+    s <- sapply(2:k, function(j) floor(p[j] * n))
+    s <- c(n - sum(s), s)
+    stopifnot(sum(s) == n)
+    
+    ind <- vector("list", k)
+    ind[[1]] <- sample(n, size = s[1], replace = FALSE)
+    for (j in 2:k) {
+        available <- setdiff(1:n, unique(unlist(ind[1:j])))
+        ind[[j]] <- sample(available, size = s[j], replace = FALSE)
+    }
+    stopifnot(all(sort(unlist(ind)) == 1:n))
+
+    names(ind) <- names(p)
+    ind
 }
